@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-pgdb-job
+  namespace: db
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - name: app-db
+        image: postgres:14-alpine
+        command: ["createdb"]
+        args: ["-h","db-service.db.svc.cluster.local", "-U", "postgres", "appdb" ]
+        env:
+        - name: PGPASSWORD
+          value: postgres
+      restartPolicy: Never

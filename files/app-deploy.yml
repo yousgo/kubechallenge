@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-test
+  namespace: app
+spec:
+  selector:
+    matchLabels:
+      app: app-test
+  # replicas: 2
+  template:
+    metadata:
+      labels:
+        app: app-test
+    spec:
+      containers:
+      - name: app-test
+        image: system.registry.eneci.net/app-test
+        # command: ["/bin/sh", "-c"]
+        # args:
+        #   - echo "yousekongo@gmail.com" > /app/data/mail.txt;
+        #     while true; do
+        #       sleep 1;
+        #     done
+        envFrom:
+        - configMapRef:
+            name: db-vars-for-app
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+      - name: private-reg-secret
