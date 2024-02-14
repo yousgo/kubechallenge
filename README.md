@@ -1,31 +1,3 @@
-Pour utiliser le resau du host et éviter d’avoir un reseau privé inaccessibel, utiliser les commandes 
-docker network create --driver=bridge --subnet=192.168.51.0/24 --gateway=192.168.51.37 -o --ip-masq -o --icc -o com.docker.network.driver.mtu=1500 --label=created_by.minikube.sigs.k8s.io=true --label=name.minikube.sigs.k8s.io=host my-network
-et ensuite démarrer minikube sur le reseau my-network
-minikube start --network=minikube
-
-kubectl create secret docker-registry private-reg-secret --docker-server=system.registry.eneci.net --docker-username=data354test --docker-password=2jYdk3G9
-
-
-
-Running docker network create --subnet 192.168.9.0/24 --driver bridge minikube before minikube start work fixed my error.
-
-minikube start --driver=docker --static-ip=192.168.51.200
-
-kubectl config set-context --current --namespace=dev-team
-
-docker context use default
-
-
-#provisioning cluster
-
-minikube start --driver hyperv -p my-hv-cluster
-
-minikube start --driver virtualbox -p my-vb-cluster --memory 2000MB --nodes 2 --no-vtx-check
-
-minikube start --driver docker -p my-dk-cluster --static-ip=192.168.51.200
-
-kubectl label node <node_name> node-role.kubernetes.io/worker=worker
-kubectl label nodes <node_name> role=worker 
 # kubechallenge
 
 Ce lab a été réalisé sous Minikube version `v1.32.0`. 
