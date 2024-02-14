@@ -4,10 +4,10 @@ Ce lab a été réalisé sous Minikube version `v1.32.0`.
 
 ## Présentation 
 
-OS : Windows 11 \
-L'objectif est de récupérer des codes de validations en effectuant une requete POST sur le path `/codes` de l'application `App` an ayant au préalable provisionné un cluster
+L'objectif est de récupérer des codes de validations en effectuant une requête POST sur le path `/codes` de l'application `App` en ayant en amont provisionné le cluster. \
+OS utilisé : Windows 11
 
-## Créations du cluster
+## Création du cluster
 
 ### Prérequis
 2 CPUs ou plus\
@@ -15,29 +15,32 @@ L'objectif est de récupérer des codes de validations en effectuant une requete
 20GB de stockage disponible\
 Un gestionnaire de conteneur ou de VM comme Virtualbox, Hyper-V, docker...
 
-### Installation de la distribution légère de k8s [minikube]
-Pour cet exercice, j'utilise : \
+### Installation de la distribution légère de k8s (Minikube)
+Pour la mise en place du cluster, j'utilise : \
 `Docker` : Pilote de minikube.\
 `Chocolatey` : Gestionnaire de packages.\
 `minikube` : Distribution légère de K8s.\
-Le binaire de minikube est disponible sur le [site](https://minikube.sigs.k8s.io/docs/start/). J’effectue la récupération et l'installation de minikube avec la commande suivante : \
+Le binaire de minikube est disponible en téléchargement sur le [site](https://minikube.sigs.k8s.io/docs/start/). J’effectue la récupération et l'installation de minikube avec la commande : \
 `choco install -y minikube`
 
-### Provisionnement du cluster et création des fichiers manifeste YAML
+### Démarrage du cluster
 Le démarrage du cluster se fait à travers la commande : \
-`minikube start --driver docker –-nodes 2 –subnet 192.168.51.0`\
-`--driver` : Indique le pilote utilisé par minikube; `--driver driver` peut etre ignorée car par défaut l'option driver est définie sur docker.
-`–-nodes` : Specifie le nombre de nœuds utilisé pour le cluster. Dans notre cas 2 nœuds soit le master et un worker.
+`minikube start --driver docker --nodes 2 --subnet 192.168.51.0`\
+`--driver` : Indique le pilote utilisé par minikube; `--driver docker` peut être ignorée car par défaut l'option driver est définie sur docker.\
+`--nodes` : Spécifie le nombre de nœuds utilisé pour le cluster. Dans notre cas 2 nœuds soit le master et un worker.\
+`--subnet` : Spécifie le sous-réseau utilisé pour les noeuds du cluster.\
 Le provisionnement de notre cluster se fera par les différentes étapes suivantes.\
 
-#### Création des namespaces
+## Provisionnement du cluster
+
+### Création des namespaces
 
 La commande : `kubectl create namespace db` pour la création du namespace `db`.\
 Et la commande : `kubectl create namespace app` pour la création du namespace `app`.
 
-#### Création d'un volume persistant(PersistentVolume)
+### Création d'un volume persistant (PersistentVolume)
 
-Le volume persistant est un espace de stockage approprié pour les applications stateful. En d'autres termes qui doivent conserver leurs états ou les données même après le redémarrage des pods sur lesquels ils sont exécutés. 
+Le volume persistant est un espace de stockage persitant approprié aux applications stateful. En d'autres termes il leur permet de conserver leurs états ou leurs données même après le redémarrage des pods sur lesquels elles sont exécutées. 
 
 ```yaml
 apiVersion: v1
@@ -53,7 +56,7 @@ spec:
     path: "F:\\Data" #windows
     type: DirectoryOrCreate
 ```
-##### Explication
+#### Explication
 ```yaml 
 capacity:
     storage: 2Gi
@@ -64,7 +67,7 @@ Définit l'espace total alloué au volume persistant. 2 giga dans notre cas.
   accessModes:
     - ReadWriteOnce
 ```
-Indique volume ne peut uniquement être monté qu’en lecture-écriture par ==un seul== nœud.
+Indique volume ne peut uniquement être monté qu’en lecture-écriture par **un seul** nœud.
 
 ```yaml
   hostPath:
@@ -73,13 +76,13 @@ Indique volume ne peut uniquement être monté qu’en lecture-écriture par ==u
 ```
 Le PV est de type hostpath, c'est à dire qu'il met à la disposition du cluster un chemin (le chemin F:\Data) de la machine hôte. Ce répertoire est créé s'il n'existe pas.
 
-La création du volume persistant s'effectue avec la commande: \
+La création du volume persistant s'effectue avec la commande : \
 `kubectl create -f files/hostpath-pv.yml`.
-Avec :
-`-f` : l'utilisation d'un fichier en argument
-`files/hostpath-pv.yml` le chemin relatif du fichier yaml.
+Avec : \
+`-f` : L'utilisation d'un fichier en argument. \
+`files/hostpath-pv.yml` : Le chemin relatif du fichier yaml.
 
-#### Création sur le namespace `db` du service chargé de la statefulset 
+### Création sur le namespace `db` du service chargé de la statefulset 
 
 ```yaml
 apiVersion: v1
@@ -96,7 +99,7 @@ spec:
     targetPort: 5432
 ```
 Ensuite la commande : `kubectl create -f files/db-svc.yml` pour la création de l'objet
-##### Explication
+#### Explication
 `type: ClusterIP`: attribue une adresse IP interne au service
 ```yaml 
   selector:
@@ -111,8 +114,8 @@ ports:
 Mappe le port `port` du service au port `targetPort` du pod.
 
 
-#### Création du secret sur le namespace `db`
-Ce secret permettra de stocker les informations le mot de passe utilisés par le serveur postgres.
+### Création du secret `pg-password` sur le namespace `db`
+Ce secret permettra de stocker le mot de passe utilisé par le serveur postgres.
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -123,10 +126,10 @@ type: Opaque
 data:
   password: cG9zdGdyZXMK
 ```
-`password: cG9zdGdyZXMK` est le hash en base64 du mot de passe.\
-Ensuite la commande : `kubectl create -f files/db-pg-password-secret.yml` pour la création de l'objet
+`password: cG9zdGdyZXMK` est le hash en **base64** du mot de passe.\
+Ensuite la commande : `kubectl create -f files/db-pg-password-secret.yml` pour la création de l'objet.
 
-#### Création du statefulset sur le namespace `db`
+### Création du statefulset `postgres-statefulset` sur le namespace `db`
 
 ```yaml
 apiVersion: apps/v1
@@ -171,10 +174,10 @@ spec:
 ```
 Ensuite la commande : `kubectl create -f files/db-statefulset.yml` pour la création du statefulset
 
-##### Explication
+#### Explication
 ...
 
-#### Création de la base de données à l'intérieur du statefulset
+### Création de la base de données à l'intérieur du statefulset
 La création de la base de données utilisée par l'application `app-test` peut se faire en envoyant une commande `createdb -U postgres appdb ` au service `db-service` qui l'acheminera vers le statefulset. Cela consiste à exécuter la commande : `kubectl exec -ti service/db-service -n db -- createdb -U postgres appdb`\
 `exec` : Exécute un shell dans le pod.\
 `-t` : Entrée standard de type TTY.\
@@ -205,12 +208,12 @@ spec:
       restartPolicy: Never
 ```
 Ensuite la commande : `kubectl create -f files/create-pgdb-job.yml` pour la création de l'objet
-##### Explication
+#### Explication
 ...
 
 
-#### Création d'une ConfigMap pour l'application `app-test` sur le namespace `app`
-Cette configMap permet de stocker les variables d'environnement qui seront définies au demarrage de l'application `app-test`.\
+### Création d'une ConfigMap pour l'application `app-test` sur le namespace `app`
+Cette ConfigMap permet de stocker les variables d'environnement qui seront définies au démarrage de l'application `app-test`.\
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -226,11 +229,11 @@ data:
 ```
 Ensuite la commande : `kubectl create -f files/app-env-bars-cm.yml` pour la création de l'objet.
 
-##### Explication
+#### Explication
 ...
 
 
-#### Création du déploiement de l'appli `app-test` sur le namespace `app`
+### Création du déploiement de l'appli `app-test` sur le namespace `app`
 
 ```yaml
 apiVersion: apps/v1
@@ -264,11 +267,11 @@ spec:
       - name: private-reg-secret
 ```
 Ensuite la commande : `kubectl create -f files/app-deploy.yml` pour la création de l'objet
-##### Explication
+#### Explication
 Voir section [Récupération de l'image app-test du référentiel docker privé](#Récupération) 
 ...
 
-#### Création du service de l'appli `app-test` sur le namespace `app`
+### Création du service de l'appli `app-test` sur le namespace `app`
 Ce service permet d'accéder au déploiement de l'application sans se soucier des adresses IP des pods.
 
 ```yaml
@@ -288,13 +291,13 @@ spec:
 
 ```
 Ensuite la commande : `kubectl create -f files/app-svc.yml` pour la création de l'objet
-##### Explication
+#### Explication
 ...
 
 
 ## Récupération de l'image app-test du référentiel docker privé
 Pour récupérer une image d'un référentiel docker privé depuis k8s, il faut au préalable définir un `secret` de type `docker-registry` qui contiendra les informations de connexion du dépôt privé. \
-On pourra procéder comme suit: \
+On procédera comme suit : \
 `kubectl create secret docker-registry private-reg-secret --docker-server=system.registry.eneci.net --docker-username=data354test --docker-password=2jYdk3G9`. \
 
 Ce secret est ensuite utilisé dans la définition du déploiement de l'application avec la clé `imagePullSecrets.name`
@@ -329,7 +332,7 @@ En pratique cela revient à se connecter au shell de l'application avec la comma
 `exec` : Exécute un shell dans le pod.\
 `-i` : Passer l'entrée standard au pod.\
 `-t` : Entrée standard de type TTY.\
-`-n app` : Spécifie le `app` namespace à utiliser.\
+`-n app` : Spécifie `app` comme namespace à utiliser.\
 `--` ou `--commands` Accepte les commandes à envoyer sur l'entrée standard.\
 
 On peut vérifier que le fichier est bien modifié avec la commande `cat /app/data/mail.txt`
@@ -350,7 +353,7 @@ Pour l'envoi de la requête REST, j'utilise `Postman`.
 Une requête `POST`, avec dans le header la clé-valeur `Apikey:yousekongo@gmail.com` est adressée à l'url `192.168.1.20:31000`. 
 ![alt text](captures/query.png)
 ### Réponse
-La réponse obtenue est la suivante: \
+La réponse obtenue est la suivante : \
 ```json
 {
     "code1": "UOkhi-pfljvbfexf@xdrzc.tfd-us-jvimztv.us.jmt.tcljkvi.cftrc",
