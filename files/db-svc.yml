@@ -4,7 +4,8 @@ metadata:
   name: db-service
   namespace: db
 spec:
-  clusterIP: None
+  type: ClusterIP
+  # clusterIP: None
   selector:
     app: postgres
   ports:

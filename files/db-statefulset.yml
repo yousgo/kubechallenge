@@ -17,9 +17,15 @@ spec:
       containers:
       - name: postgres
         image: postgres:14-alpine
-        envFrom:
-        - configMapRef:
-            name: db-env-vars
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pg-password
+              key: password
+        # envFrom:
+        # - configMapRef:
+        #     name: db-env-vars
         ports:
         - containerPort: 5432
           name: db
