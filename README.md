@@ -271,7 +271,7 @@ spec:
 ```
 Ensuite la commande : `kubectl create -f files/app-deploy.yml` pour la création de l'objet
 ### Explication
-Voir section [Récupération de l'image app-test du référentiel docker privé](#). \
+Voir section [Récupération de l'image app-test du référentiel docker privé](#récupération-de-limage-app-test-du-référentiel-docker-privé). \
 ...
 
 ## Création du service de l'appli `app-test` dans le namespace `app`
