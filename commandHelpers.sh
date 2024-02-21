@@ -20,7 +20,7 @@ kubectl create -f files/app-svc.yml
 
 
 #namespace db deletions
-kubectl delete pv disk-pv db &&
+kubectl delete pv disk-pv &&
 kubectl delete namespace db &&
 kubectl delete svc db-service -n db &&
 kubectl delete statefulset postgres-statefulset -n db
